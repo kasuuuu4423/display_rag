@@ -40,23 +40,26 @@ def send_osc(items):
 	msg = msg.build()
 	client.send(msg)
 
-#offsetから！！！！！！！
 def onLed():
-	onLed = []
-	for i in range(count_once):
-		onLed_oneSctn = int(once / (2 ** (i + 1)))
-		onled_sep = 2 ** (i + 1)
+	for i in range(count_init):
 		onLed = []
-		for j in range(onled_sep):
-			for k in range(offset, onLed_oneSctn + offset):
-				if(j%2 == 0):
-					onLed.append(1)
-				else:
-					onLed.append(0)
-		onLed = [i for i, x in enumerate(onLed) if x == 1]
-		send_osc(onLed)
-		frames[i] = capture()
-		analyze(frames[i])
+		for j in range(count_once):
+			onLed_oneSctn = int(once / (2 ** (j + 1)))
+			onled_sep = 2 ** (j + 1)
+			onLed = []
+			for sep_pos in range(onled_sep):
+				for k in range(offset, onLed_oneSctn + offset):
+					if(sep_pos%2 == 0):
+						onLed.append(1)
+					else:
+						onLed.append(0)
+			onLed = [i for i, x in enumerate(onLed) if x == 1]
+			send_osc(onLed)
+			frames[j] = capture()
+		for ana_item in frames:
+			analyze(ana_item)
+		apply(pixels_bin, colors)
+		offset += once
 
 def capture():
 	cap = cv2.VideoCapture(camera)
@@ -79,6 +82,7 @@ def analyze(frame):
 					colors[i, j] = b
 
 def apply(pix, clrs):
+	global pixels
 	for j in range(width):
 		for i in range(height):
 			if(pix[i, j] is not None):
@@ -87,18 +91,16 @@ def apply(pix, clrs):
 					bin += str(num)
 				bin = int(bin, 0)
 				ledNum = once - bin + offset
-				if(pix.count(ledNum) == 0):
-					pix[i, j] = ledNum
+				if(pixels.count(ledNum) == 0):
+					pixels[i, j] = ledNum
 				else:
-					same = pix.index(ledNum)
+					same = pixels.index(ledNum)
 					same_c = clrs[same]
 					if(same_c < clrs[i, j]):
-						pix[i, j] = ledNum
-						pix[same] = None
+						pixels[i, j] = ledNum
+						pixels[same] = None
 
 onLed()
-apply(pixels_bin, colors)
-offset += once
 
 
 # def initialize():
