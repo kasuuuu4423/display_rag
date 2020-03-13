@@ -5,7 +5,9 @@ from pythonosc import osc_message_builder
 from pythonosc import udp_client
 from time import sleep
 import math
+import collections
 import _variables
+import json
 
 TAPEs = _variables.TAPEs
 LEDs = _variables.LEDs
@@ -18,9 +20,9 @@ once = 128
 count_once = int(math.log(once, 2))
 count_init = LEDs//once
 offset = 0
-pixels_bin = np.empty((height,width,3), int)
-pixels = np.empty((height,width,4), int)
-colors = np.empty((height,width), int)
+pixels_bin = [[[] for col in range(width)] for row in range(height)]
+pixels = [[-1 for col in range(width)] for row in range(height)]
+colors = [[0 for col in range(width)] for row in range(height)]
 frames = []
 
 parser = argparse.ArgumentParser()
@@ -41,6 +43,7 @@ def send_osc(items):
 	client.send(msg)
 
 def onLed():
+	global offset, frames
 	for i in range(count_init):
 		onLed = []
 		for j in range(count_once):
@@ -55,10 +58,11 @@ def onLed():
 						onLed.append(0)
 			onLed = [i for i, x in enumerate(onLed) if x == 1]
 			send_osc(onLed)
-			frames[j] = capture()
+			#sleep(0.2)
+			frames.append(capture())
 		for ana_item in frames:
 			analyze(ana_item)
-		apply(pixels_bin, colors)
+		apply()
 		offset += once
 
 def capture():
@@ -77,48 +81,39 @@ def analyze(frame):
 			g = pixelValue[1]
 			b = pixelValue[0]
 			if b > 200:
-				pixels_bin[i, j].append(1)
-				if(colors[i, j] is None or colors[i, j] < b):
-					colors[i, j] = b
+				pixels_bin[i][j].append(1)
+				if(colors[i][j] == 0 or colors[i][j] < b):
+					colors[i][j] = b
+			else:
+				pixels_bin[i][j].append(0)
 
-def apply(pix, clrs):
-	global pixels
+def apply():
+	global pixels_bin, pixels, colors, offset
 	for j in range(width):
 		for i in range(height):
-			if(pix[i, j] is not None):
+			if(pixels_bin[i][j] is not None):
 				bin = "0b"
-				for num in pix[i, j]:
+				for num in pixels_bin[i][j]:
 					bin += str(num)
-				bin = int(bin, 0)
+				bin = int(bin, 2)
 				ledNum = once - bin + offset
-				if(pixels.count(ledNum) == 0):
-					pixels[i, j] = ledNum
+				column = 0
+				flag_lednum = False
+				for row in range(height):
+					if(pixels[row].count(ledNum) > 0):
+						column = pixels[row].index(ledNum)
+						flag_lednum = True
+						break
+				if(not flag_lednum):
+					pixels[i][j] = ledNum
 				else:
-					same = pixels.index(ledNum)
-					same_c = clrs[same]
-					if(same_c < clrs[i, j]):
-						pixels[i, j] = ledNum
-						pixels[same] = None
+					same_c = colors[row][column]
+					if(same_c < colors[i][j]):
+						same = pixels[row][column]
+						pixels[i][j] = ledNum
+						pixels[row][column] = -1
+
 
 onLed()
-
-
-# def initialize():
-# 	led_pos = 0
-
-# 				# if j == 77 and i == 43:
-# 				# 	print("aaaaaaaaaaaaa")
-# 		msg = osc_message_builder.OscMessageBuilder(address="/init")
-# 		msg.add_arg(led_pos)
-# 		msg.add_arg(0)
-# 		msg = msg.build()
-# 		sleep(0.05)
-# 		client.send(msg)
-
-# 		#LEDがすべて認識されたら終了
-# 		if led_pos == TAPEs * LEDs - 1:
-# 			break
-# 		led_pos = led_pos + 1
-# 	# キャプチャをリリースして、ウィンドウをすべて閉じる
-# 	cap.release()
-# 	cv2.destroyAllWindows()
+with open('pos.json', 'w') as f:
+	json.dump(pixels, f, ensure_ascii=False, indent=4)
