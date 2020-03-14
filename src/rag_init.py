@@ -1,68 +1,80 @@
 import cv2
 import numpy as np
 import argparse
-from pythonosc import osc_message_builder
-from pythonosc import udp_client
+import socket
 from time import sleep
 import math
 import collections
+import sys
 import _variables
 import json
 
 TAPEs = _variables.TAPEs
 LEDs = _variables.LEDs
+EPSs = _variables.ESPs
 width,height=_variables.width, _variables.height
 camera = _variables.camera
 port_num = _variables.port_num
 ip = _variables.ip
-
+LEDsPerESP = LEDs/EPSs
 once = 128
 count_once = int(math.log(once, 2))
 count_init = LEDs//once
+
+host = "192.168.1.9"
+port = 10001
+print("HOST:" + host +", PORT:" + str(port))
+
 offset = 0
 pixels_bin = [[[] for col in range(width)] for row in range(height)]
 pixels = [[-1 for col in range(width)] for row in range(height)]
 colors = [[0 for col in range(width)] for row in range(height)]
 frames = []
 
-parser = argparse.ArgumentParser()
-parser.add_argument("--ip", default = ip, help="The ip of th OSC Server")
-parser.add_argument("--port", type=int, default=port_num, help="The port the OSC server is listening on")
-args = parser.parse_args()
-client = udp_client.UDPClient(args.ip, args.port)
-print("IP Address:" + ip +", Port:" + str(port_num))
 
-def send_osc(items):
-	msg = osc_message_builder.OscMessageBuilder(address="/init")
-	if isinstance(items, list):
-		for item in items:
-			msg.add_arg(item)
+def send_soc(items):
+	socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+	socket_client.connect((host, port))
+	msg = json.dumps(items)
+	socket_client.send(msg.encode('utf-8'))
+	response = socket_client.recv(4096)
+	while not response:
+		print('Wait for response.....')
+		sleep(0.1)
+	if(response != "1"):
+		print(response)
+		sys.exit(0)
 	else:
-		msg.add_arg(items)
-	msg = msg.build()
-	client.send(msg)
+		print(response)
 
 def onLed():
 	global offset, frames
 	for i in range(count_init):
 		onLed = []
-		for j in range(count_once):
-			onLed_oneSctn = int(once / (2 ** (j + 1)))
-			onled_sep = 2 ** (j + 1)
-			onLed = []
-			for sep_pos in range(onled_sep):
-				for k in range(offset, onLed_oneSctn + offset):
-					if(sep_pos%2 == 0):
-						onLed.append(1)
-					else:
-						onLed.append(0)
-			onLed = [i for i, x in enumerate(onLed) if x == 1]
-			send_osc(onLed)
-			#sleep(0.2)
-			frames.append(capture())
-		for ana_item in frames:
-			analyze(ana_item)
-		apply()
+		for cnt in range (2):
+			for j in range(count_once):
+				onLed_oneSctn = int(once / (2 ** (j + 1)))
+				onled_sep = 2 ** (j + 1)
+				onLed = []
+				for sep_pos in range(onled_sep):
+					for k in range(offset, onLed_oneSctn + offset):
+						if(cnt == 0):
+							if(sep_pos%2 == 0):
+								onLed.append(1)
+							else:
+								onLed.append(0)
+						else:
+							if(sep_pos%2 == 0):
+								onLed.append(0)
+							else:
+								onLed.append(1)
+				onLed = [i + offset for i, x in enumerate(onLed) if x == 1]
+				send_soc(onLed)
+				frames.append(capture())
+				send_soc(0)
+			for ana_item in frames:
+				analyze(ana_item)
+			apply()
 		offset += once
 
 def capture():

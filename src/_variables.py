@@ -1,7 +1,8 @@
 TAPEs = 16
 LEDs = TAPEs * 150
+ESPs = 4
 width,height=80,45
-camera = 1
+camera = 2
 
 
 port_num = 8888
