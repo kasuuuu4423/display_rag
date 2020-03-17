@@ -11,19 +11,26 @@ import json
 
 TAPEs = _variables.TAPEs
 LEDs = _variables.LEDs
-EPSs = _variables.ESPs
 width,height=_variables.width, _variables.height
 camera = _variables.camera
 port_num = _variables.port_num
 ip = _variables.ip
-LEDsPerESP = LEDs/EPSs
 once = 128
 count_once = int(math.log(once, 2))
-count_init = LEDs//once
+count_init = []
+c = 0
+for LED in LEDs:
+	count_init.append(LED//once)
+	c += 1
 
 host = "192.168.1.9"
-port = 10001
-print("HOST:" + host +", PORT:" + str(port))
+port = 37564
+for i in ip:
+	print("HOST:" + i +", PORT:" + str(port))
+
+print(TAPEs)
+print(LEDs)
+print(str(width) + "x" + str(height))
 
 offset = 0
 pixels_bin = [[[] for col in range(width)] for row in range(height)]
@@ -31,51 +38,49 @@ pixels = [[-1 for col in range(width)] for row in range(height)]
 colors = [[0 for col in range(width)] for row in range(height)]
 frames = []
 
-
-def send_soc(items):
+def send_soc(ip, items):
 	socket_client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-	socket_client.connect((host, port))
-	msg = json.dumps(items)
+	socket_client.connect((ip, port))
+	if(type(items) is list):
+		msg = json.dumps(items)
+	elif(type(items) is str):
+		msg = items
 	socket_client.send(msg.encode('utf-8'))
 	response = socket_client.recv(4096)
 	while not response:
 		print('Wait for response.....')
-		sleep(0.1)
-	if(response != "1"):
-		print(response)
-		sys.exit(0)
-	else:
-		print(response)
 
 def onLed():
 	global offset, frames
-	for i in range(count_init):
-		onLed = []
-		for cnt in range (2):
-			for j in range(count_once):
-				onLed_oneSctn = int(once / (2 ** (j + 1)))
-				onled_sep = 2 ** (j + 1)
-				onLed = []
-				for sep_pos in range(onled_sep):
-					for k in range(offset, onLed_oneSctn + offset):
-						if(cnt == 0):
-							if(sep_pos%2 == 0):
-								onLed.append(1)
+	for c in range(len(count_init)):
+		send_soc(ip[c], "off")
+		for i in range(count_init[c]):
+			onLed = []
+			for cnt in range (2):
+				for j in range(count_once):
+					onLed_oneSctn = int(once / (2 ** (j + 1)))
+					onled_sep = 2 ** (j + 1)
+					onLed = []
+					for sep_pos in range(onled_sep):
+						for k in range(offset, onLed_oneSctn + offset):
+							if(cnt == 0):
+								if(sep_pos%2 == 0):
+									onLed.append(1)
+								else:
+									onLed.append(0)
 							else:
-								onLed.append(0)
-						else:
-							if(sep_pos%2 == 0):
-								onLed.append(0)
-							else:
-								onLed.append(1)
-				onLed = [i + offset for i, x in enumerate(onLed) if x == 1]
-				send_soc(onLed)
-				frames.append(capture())
-				send_soc(0)
-			for ana_item in frames:
-				analyze(ana_item)
-			apply()
-		offset += once
+								if(sep_pos%2 == 0):
+									onLed.append(0)
+								else:
+									onLed.append(1)
+					onLed = [i + offset for i, x in enumerate(onLed) if x == 1]
+					send_soc(ip[c], onLed)
+					analyze(capture())
+					send_soc(ip[c], "off")
+				# for ana_item in frames:
+				# 	analyze(ana_item)
+				apply(cnt)
+			offset += once
 
 def capture():
 	cap = cv2.VideoCapture(camera)
@@ -99,7 +104,7 @@ def analyze(frame):
 			else:
 				pixels_bin[i][j].append(0)
 
-def apply():
+def apply(count):
 	global pixels_bin, pixels, colors, offset
 	for j in range(width):
 		for i in range(height):
@@ -108,7 +113,10 @@ def apply():
 				for num in pixels_bin[i][j]:
 					bin += str(num)
 				bin = int(bin, 2)
-				ledNum = once - bin + offset
+				if(count == 0):
+					ledNum = once - bin + offset
+				else:
+					ledNum = bin + offset
 				column = 0
 				flag_lednum = False
 				for row in range(height):

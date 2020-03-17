@@ -1,9 +1,6 @@
-TAPEs = 16
-LEDs = TAPEs * 150
-ESPs = 4
+TAPEs = 2
+LEDs = [TAPEs * 300]
+ip = ["192.168.0.124"]
 width,height=80,45
-camera = 2
-
-
-port_num = 8888
-ip = "192.168.13.5"
+camera = 1
+port_num = 37564
