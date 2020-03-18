@@ -18,7 +18,7 @@ send_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 def send_soc(ip, items):
 	if(type(items) is list):
-		msg = json.dumps(items)
+		msg = "/video/" + json.dumps(items)
 	elif(type(items) is str):
 		msg = items
 	print(msg)
@@ -27,7 +27,6 @@ def send_soc(ip, items):
 def video_send():
 	video = cv2.VideoCapture("./video/bad.mp4")
 	while(True):
-		colors = [[] for i in range(len(ip))]
 		ret, videoFrame = video.read()
 		if not ret:
 			video.set(cv2.CAP_PROP_POS_FRAMES, 0)
@@ -35,6 +34,7 @@ def video_send():
 		videoFrame = cv2.resize(videoFrame,(width, height))
 		cv2.imshow("frame", videoFrame)
 		for j in range(width):
+			colors = [[] for i in range(len(ip))]
 			for i in range(height):
 				if(pos[i][j][0] > 0 and 2700 > pos[i][j][0]):
 					pixVal = videoFrame[i, j]
@@ -56,8 +56,9 @@ def video_send():
 					color = "0x" + g + r + b
 					colors[pos[i][j][1]].append(pos[i][j][0])
 					colors[pos[i][j][1]].append(color)
-		for k in range(len(ip)):
-			send_soc(ip[k], colors[k])
+			for k in range(len(ip)):
+				send_soc(ip[k], colors[k])
+			#sleep(0.1)
 		k = cv2.waitKey(1)
 		if k == 27:
 			break

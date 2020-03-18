@@ -149,4 +149,4 @@ def apply(count_reverce, count_esp):
 
 onLed()
 with open('pos.json', 'w') as f:
-	json.dump(pixels, f, ensure_ascii=False, indent=4)
+	json.dump(pixels, f, ensure_ascii=False, indent=2)
