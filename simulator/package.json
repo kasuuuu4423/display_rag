@@ -1,0 +1,15 @@
+{
+  "name": "simulator",
+  "version": "1.0.0",
+  "description": "LED Simulator for display[rag]",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "YasushiShimizu",
+  "license": "ISC",
+  "dependencies": {
+    "dgram": "^1.0.1",
+    "jquery": "^3.5.0"
+  }
+}

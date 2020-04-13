@@ -32,7 +32,7 @@ send_client = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for i in range(l
 rcv_client = [socket.socket(socket.AF_INET, socket.SOCK_DGRAM) for i in range(len(ip))]
 
 for i in range(len(ip)):
-	rcv_client[i].bind(("192.168.0.120", rcv_port[i]))
+	rcv_client[i].bind((myIP, rcv_port[i]))
 	print("port: " + str(rcv_port[i]))
 
 offset = 0
@@ -66,7 +66,11 @@ def capture(cap):
 	w = frame.shape[1]
 	frame = frame[2:h-2,3:w-3]
 	frame = cv2.resize(frame,(width, height))
-	cv2.imwrite('img/' + str(count) + '.jpg', frame)
+	threshold = 30
+	frame = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+	ret, frame = cv2.threshold(frame, threshold, 255, cv2.THRESH_BINARY)
+	cv2.imshow('Edited Frame', frame)
+	#cv2.imwrite('img/' + str(count) + '.jpg', frame)
 	count += 1
 	return frame
 
@@ -75,11 +79,12 @@ def analyze(frame):
 	for j in range(width):
 		for i in range(height):
 			pixelValue = frame[i, j]
-			r = frame.item(i, j, 2)
-			g = frame.item(i, j, 1)
-			b = frame.item(i, j, 0)
-			color = int((r + g + b) / 3)
-			if color > 200:
+			# r = frame.item(i, j, 2)
+			# g = frame.item(i, j, 1)
+			# b = frame.item(i, j, 0)
+			# color = int((r + g + b) / 3)
+			color = pixelValue
+			if color > 250:
 				pixels_bin[i][j].append(1)
 				if(colors[i][j] == 0 or colors[i][j] < color):
 					colors[i][j] = color

@@ -15,16 +15,14 @@ ip = _variables.send_ip
 json_open = open('pos.json', 'r')
 pos = json.load(json_open)
 send_client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+jsons = [[] for i in range(len(ip))]
 
-def send_soc(ip, port, items):
-	if(type(items) is list):
-		msg = "/video/" + json.dumps(items)
-	elif(type(items) is str):
-		msg = items
+def send_soc(ip, port, json):
+	msg = "/video/" + json
 	send_client.sendto(msg.encode('utf-8'), (ip, port))
 
 def video_send():
-	video = cv2.VideoCapture("./video/test.mp4")
+	video = cv2.VideoCapture("./video/bad.mp4")
 	while(True):
 		ret, videoFrame = video.read()
 		if not ret:
@@ -32,8 +30,8 @@ def video_send():
 			continue
 		videoFrame = cv2.resize(videoFrame,(width, height))
 		cv2.imshow("frame", videoFrame)
+		colors = [[] for i in range(len(ip))]
 		for j in range(width):
-			colors = [[] for i in range(len(ip))]
 			for i in range(height):
 				if(pos[i][j][0] > 0 and 2700 > pos[i][j][0]):
 					pixVal = videoFrame[i, j]
@@ -42,11 +40,13 @@ def video_send():
 					b = videoFrame.item(i, j, 0)
 					color = [r, g, b]
 					colors[pos[i][j][1]].append(pos[i][j][0])
-					colors[pos[i][j][1]].append(color)
-			for k in range(len(ip)):
-				if(len(colors[k]) > 0):
-					send_soc(ip[k], send_port[k], colors[k])
-			sleep(0.0001)
+					colors[pos[i][j][1]].append(color)	
+		for l in range(len(ip)):
+			jsons[l] = json.dumps(colors[l])
+		for k in range(len(ip)):
+			if(len(colors[k]) > 0):
+				send_soc(ip[k], send_port[k], jsons[k])
+		sleep(0.001)
 		k = cv2.waitKey(1)
 		if k == 27:
 			break

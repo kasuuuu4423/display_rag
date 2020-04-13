@@ -1,4 +1,3 @@
-#include <ArduinoJson.h>
 #include <WebServer.h>
 #include <NeoPixelSegmentBus.h>
 #include <NeoPixelBrightnessBus.h>
