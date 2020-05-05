@@ -1,0 +1,5 @@
+/src/test*
+/src/__pycache__/
+/src/pos.json
+/src/video/*
+/src/img/*

@@ -1,0 +1,11 @@
+body {
+  background: #191919;
+}
+
+body .led {
+  position: absolute;
+  width: 4px;
+  height: 4px;
+  background: #e5e5e5;
+  border-radius: 2px;
+}
