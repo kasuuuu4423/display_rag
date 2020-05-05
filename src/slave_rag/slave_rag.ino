@@ -17,15 +17,14 @@ const char* PASSWD = "kouheki0000";
 int to_port = 11004;
 IPAddress ip(192, 168, 0, 124);
 
-
 IPAddress gateway(192,168, 0, 1);
 IPAddress subnet(255, 255, 255, 0);
-IPAddress DNS(192, 168, 0, 90); 
+IPAddress DNS(192, 168, 0, 90);
 char *to_ip = "192.168.0.120";
-
 
 WiFiUDP udp;
 WiFiServer server(port);
+
 void setup(){
   strip.Begin();
   allOff();
